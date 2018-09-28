@@ -1,12 +1,17 @@
-from flask import Flask
+from flask_script import Manager
+from flask_migrate import Migrate, MigrateCommand
+from info import create_app, db
 
-app = Flask(__name__)
 
+# 创建app,　并传入配置模式: development/production(工厂方法)
+app = create_app("development")
 
-@app.route('/')
-def hello_world():
-    return 'Hello World'
-
+# 创建迁移对象
+Migrate(app, db)
+# 创建管理类
+manager = Manager(app)
+# 通过管理类添加数据库迁移指令
+manager.add_command('db', MigrateCommand)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    manager.run()
