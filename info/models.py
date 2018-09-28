@@ -100,7 +100,7 @@ class User(BaseModel, db.Model):
 
 
 class News(BaseModel, db.Model):
-    """新闻"""
+    """新闻模型类"""
     __tablename__ = "info_news"
 
     id = db.Column(db.Integer, primary_key=True)  # 新闻编号
