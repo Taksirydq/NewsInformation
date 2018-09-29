@@ -160,6 +160,15 @@ var imageCodeId = ""
 // TODO 生成一个图片验证码的编号，并设置页面中图片验证码img标签的src属性
 function generateImageCode() {
 
+    // 生成唯一编码  严谨一点:UUID 不是很严谨:时间戳
+      imageCodeId = generateUUID()
+
+    //构建url
+    var url = '/passport/image_code?code_id=' + imageCodeId
+
+    //替换img标签的src属性，自动发送get请求 src就会使用url发送一个get请求
+    $(".get_pic_code").attr("src", url)
+
 }
 
 // 发送短信验证码
