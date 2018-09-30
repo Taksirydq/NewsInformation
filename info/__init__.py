@@ -52,7 +52,7 @@ def create_app(config_name):
     db.init_app(app)
     # 创建redis数据库对象(懒加载思想)
     global redis_store
-    redis_store = StrictRedis(host=configClass.REDIS_HOST, port=configClass.REDIS_PORT)
+    redis_store = StrictRedis(host=configClass.REDIS_HOST, port=configClass.REDIS_PORT, decode_responses=True)
 
     """
       #4.开启csrf保护机制
@@ -61,7 +61,7 @@ def create_app(config_name):
       3.自己校验这两个值
       """
     # 开启csrf保护
-    CSRFProtect(app)
+    # CSRFProtect(app)
     # 设置session保存位置,将session的存储方法进行调整（flask后端内存---> redis数据库）
     Session(app)
 
