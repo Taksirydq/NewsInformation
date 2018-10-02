@@ -52,7 +52,11 @@ def create_app(config_name):
     db.init_app(app)
     # 创建redis数据库对象(懒加载思想)
     global redis_store
-    redis_store = StrictRedis(host=configClass.REDIS_HOST, port=configClass.REDIS_PORT, decode_responses=True)
+    redis_store = StrictRedis(host=configClass.REDIS_HOST,
+                              port=configClass.REDIS_PORT,
+                              db=configClass.REDIS_NUM,
+                              decode_responses=True
+                              )
 
     """
       #4.开启csrf保护机制

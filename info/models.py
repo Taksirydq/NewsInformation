@@ -64,17 +64,33 @@ class User(BaseModel, db.Model):
     # news.user: 该新闻属于哪个用户
     news_list = db.relationship('News', backref='user', lazy='dynamic')
 
+    def set_password_hash(self, password):
+        """密码加密处理"""
+        # 参数一: 未加密的密码
+        # 参数二: 加密后的密码并赋值给user对象的password_hash属性
+        # self 代表哪个用户　# password_hash记录了加完密码后的密码值
+        self.password_hash = generate_password_hash(password)
+
+    # password属性的get方法---->print(user.password)触发get方法
     @property
     def password(self):
-        raise AttributeError("当前属性不可读")
+        raise AttributeError("该属性不能获取")
+        # password属性的set方法---->user.password = 1234触发set方法
 
     @password.setter
-    def password(self, value):
-        self.password_hash = generate_password_hash(value)
+    def password(self, password):
+        # password: 未加密的密码
+        # 返回值:加密后的密码并赋值给user对象的password_hash属性
+        self.password_hash = generate_password_hash(password)
 
     def check_passowrd(self, password):
+        # 参数一: 加密密码
+        # 参数二: 未加密的密码
+        # 参数三: 将未加密的密码按照相同的加密方式再次加密，然后在比较，如果一致返回True, 否则返回False
         return check_password_hash(self.password_hash, password)
 
+    # 能够将user对象转换成字典
+    # 能够隐藏数据库字段名称
     def to_dict(self):
         resp_dict = {
             "id": self.id,

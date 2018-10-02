@@ -102,6 +102,7 @@ $(function(){
 
     // TODO 登录表单提交
     $(".login_form_con").submit(function (e) {
+        // 阻止表单默认提交行为
         e.preventDefault()
         var mobile = $(".login_form #mobile").val()
         var password = $(".login_form #password").val()
@@ -116,13 +117,46 @@ $(function(){
             return;
         }
 
+        // 组织请求参数
+        var params = {
+            "mobile": mobile,
+            "password": password
+        }
+
         // 发起登录请求
+        // 发起注册请求
+        $.ajax({
+            // 设置url
+             url: "/passport/login",
+             // 设置请求方式
+             type: "post",
+             // 将js对象转换成json字符串发送给后端
+             data: JSON.stringify(params),
+             // 声明上传的数据内容格式是 json字符串
+             contentType: "application/json",
+             dataType: 'json',
+             headers: {
+                "X-CSRFToken" : getCookie("csrf_token")
+             },
+             success: function (resp) {
+                if(resp.errno == "0"){
+                    // 返回成功 刷新页面
+                    location.reload()
+                }else{
+                    // 错误信息展示
+                    $("#login-password-err").html(resp.errmsg)
+                    $("#login-password-err").show()
+                }
+             }
+         })
     })
+
 
 
     // TODO 注册按钮点击
     $(".register_form_con").submit(function (e) {
-        // 阻止默认提交操作
+        // 阻止表单默认提交操作
+        // e提交事件
         e.preventDefault()
 
 		// 取到用户输入的内容
@@ -149,9 +183,41 @@ $(function(){
             $("#register-password-err").show();
             return;
         }
+        // 组织请求参数
+        var params = {
+		    "mobile":mobile,
+            "smscode":smscode,
+            "password":password
+        }
 
         // 发起注册请求
+                $.ajax({
+            url: "/passport/register",
+            type: "POST",
+            // 将js对象转换成json字符串
+            data: JSON.stringify(params),
+            // 告知后端请求数据的格式为json
+            contentType: "application/json",
+            // 设置接受后端数据为json格式
+            dataType: "json",
+            // headers: {
+            //  "X-CSRFToken" : getCookie("csrf_token")
+            // },
+            // resp = jsonify(errno=RET.OK, errmsg="手机格式错误")
+            success: function (resp) {
+                //回调函数
+                if (resp.errno == '0'){
+                    // 注册成功
+                    // 刷新页面 隐藏表单
+                    window.location.reload()
+                }else{
+                     //展示错误信息
+                     $("#register-password-err").html(resp.errmsg)
+                     $("#register-password-err").show()
+                }
 
+            }
+        })
     })
 })
 
@@ -286,4 +352,26 @@ function generateUUID() {
         return (c=='x' ? r : (r&0x3|0x8)).toString(16);
     });
     return uuid;
+}
+
+// 退出登录
+function login_out() {
+    // 发起注册请求
+    $.ajax({
+        // 设置url
+         url: "/passport/login_out",
+         // 设置请求方式
+         type: "post",
+         headers: {
+             "X-CSRFToken" : getCookie("csrf_token")
+         },
+         success: function (resp) {
+            if(resp.errno == "0"){
+                // 返回成功 刷新页面
+                location.reload()
+            }else{
+
+            }
+         }
+     })
 }

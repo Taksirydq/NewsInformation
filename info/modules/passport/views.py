@@ -1,13 +1,169 @@
 from . import passport_blu
 from flask import request, current_app
-from flask import abort, make_response, jsonify
+from flask import abort, make_response, jsonify, session
 from info.utils.captcha.captcha import captcha
-from info import redis_store, constants
+from info import redis_store, constants, db
 from info.utils.response_code import RET
 import re, random
 from info.models import User
 from info.lib.yuntongxun.sms import CCP
+from datetime import datetime
 
+
+@passport_blu.route('/login', methods=['POST'])
+def login():
+    """用户登录后端接口"""
+    """
+    1.获取参数
+        1.1 mobile: 手机号码　password: 未加密的密码
+    2.检验参数
+        2.1 非空判断
+        2.2　手机号码格式判断
+    3.逻辑处理
+        3.1　根据mobile查询用户是否存在
+        3.2　不存在: 提示账号不存在
+        3.3　存在: 判断密码是否填写正确
+        3.4　保存用户登录信息(更新用户最后一次登录时间)
+    4.返回值
+        4.1　返回登录成功
+    """
+    # 1.1mobile: 手机号码　password: 未加密的密码
+    param_dict = request.json
+    mobile = param_dict.get("mobile", "")
+    password = param_dict.get("password", "")
+    # 2.1 非空判断
+    if not all([mobile, password]):
+        return jsonify(errno=RET.PARAMERR, errmsg="参数不足")
+    # 2.2手机号码格式判断
+    if not re.match('1[35789][0-9]{9}', mobile):
+        current_app.logger.error("手机格式错误")
+        return jsonify(errno=RET.PARAMERR, errmsg="手机格式错误")
+
+    # 3.1根据mobile查询用户是否存在
+    try:
+        user = User.query.filter(User.mobile == mobile).first()
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg="查询用户信息异常")
+    # 3.2　不存在: 提示账号不存在
+    if not user:
+        return jsonify(errno=RET.NODATA, errmsg="用户不存在")
+
+    # 3.3 存在: 判断密码是否填写正确
+    # 参数一: 未加密的密码
+    if not user.check_passowrd(password):
+        # 密码错误
+        return jsonify(errno=RET.DATAERR, errmsg="密码填写错误")
+
+    # 3.4保存用户登录信息(更新用户最后一次登录时间)
+    session["user_id"] = user.id
+    session["nick_name"] = user.mobile
+    session["mobile"] = user.mobile
+    # 更新最后一次登录时间
+    user.last_login = datetime.now()
+
+    # 修改了user对象的数据, 需要使用commit将数据保存到数据库
+    try:
+        db.session.commit()
+    except Exception as e:
+        current_app.logger.error(e)
+        db.session.rollback()
+        return jsonify(errno=RET.DBERR, errmsg="保存用户数据异常")
+
+    # 4.登录成功
+    return jsonify(errno=RET.OK, errmsg="登录成功")
+
+
+@passport_blu.route('/login_out', methods=['POST'])
+def login_out():
+    """退出登录后端接口"""
+    # 将用户登录信息清除
+    session.pop("user_id")
+    session.pop("mobile")
+    session.pop("nick_name")
+    return jsonify(errno=RET.OK, errmsg="退出登录成功")
+
+
+# 127.0.0.1:5000/passport/register
+@passport_blu.route('/register', methods=['POST'])
+def register():
+    """注册的后端接口"""
+    """
+    1.获取参数
+        1.1 mobile: 手机号码，smscode:短信验证码，password:未加密的密码
+    2.校验参数
+        2.1　非空判断
+        2.2　手机号码格式判断
+    3.逻辑处理
+        3.1 根据"SMS_CODE_mobile"作为key去redis中获取真实的短信验证码值
+        3.2 对比用户填写的短信验证码和真实的短信验证值
+        3.3　不相等: 提示短信验证码填写错误
+        3.3　相等:根据User类创建用户对象，并给其属性赋值
+        3.5　存储到数据库
+        3.6　一般需求: 注册成功，一般自动登录，记录用户登录信息
+    4.返回值
+        4.1 注册成功
+    """
+    # 1.1 mobile: 手机号码，smscode:短信验证码，password:未加密的密码
+    param_dict = request.json
+    mobile = param_dict.get("mobile", "")
+    smscode = param_dict.get("smscode", "")
+    password = param_dict.get("password", "")
+    # 2.1　非空判断
+    if not all([mobile, smscode, password]):
+        return jsonify(errno=RET.PARAMERR, errmsg="参数不足")
+    # 2.2手机号码格式判断
+    if not re.match('1[35789][0-9]{9}', mobile):
+        current_app.logger.error("手机格式错误")
+        return jsonify(errno=RET.PARAMERR, errmsg="手机格式错误")
+
+        # 3.1根据"SMS_CODE_mobile"作为key去redis中获取真实的短信验证码值
+    try:
+        real_smscode = redis_store.get("SMS_CODE_%s" % mobile)
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg="查询真实短信验证码异常")
+
+    # 从redis数据库删除短信验证码(主要是为了防止别有用心的人利用这5分钟)
+    if real_smscode:
+        redis_store.delete("SMS_CODE_%s" % mobile)
+    else:
+        return jsonify(errno=RET.NODATA, errmsg="短信验证码过期")
+
+    # 3.2对比用户填写的短信验证码和真实的短信验证值
+    if smscode != real_smscode:
+        # 3.3不相等: 提示短信验证码填写错误
+        return jsonify(errno=RET.DATAERR, errmsg="短信验证码错误")
+
+    # 3.4相等:根据User类创建用户对象，并给其属性赋值
+    user = User()
+    user.mobile = mobile
+    user.nick_name = mobile
+    # 当前时间作为最后一次登录时间
+    user.last_login = datetime.now()
+    # TODO:密码加密处理
+    # 一般的套路
+    # user.set_password_hash(password)
+    # 将属性赋值的底层实现(set和get方法)
+    user.password = password
+
+    # 3.5存储到数据库
+    try:
+        db.session.add(user)
+        db.session.commit()
+    except Exception as e:
+        current_app.logger.error(e)
+        # 数据库回滚
+        db.session.rollback()
+        return jsonify(errno=RET.DBERR, errmsg="添加用户数据库异常")
+
+    # 3.6 一般需求:注册成功，一般自动登录，记录用户登录信息
+    session["user_id"] = user.id
+    session["nick_name"] = user.mobile
+    session["mobile"] = user.mobile
+
+    # 4注册成功
+    return jsonify(errno=RET.OK, errmsg="注册成功")
 
 
 @passport_blu.route('/image_code')
@@ -108,7 +264,7 @@ def send_sms_code():
 
     # 3.2拿用户填写的图片验证码值和redis中获取的真实值进行比较
     # 细节１: 全部按照小写格式进行比较(忽略大小写)
-    # 细节２: redis对象创建的时候设置decode_response=True
+    # 细节２: redis对象创建的时候设置decode_response=True(将二进制数据转换成字符串)
     if real_image_code.lower() != image_code.lower():
         # 3.3如果不相等告诉前端图片验证码填写错误
         return jsonify(errno=RET.DATAERR, errmsg="填写图片验证码错误")
