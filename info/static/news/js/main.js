@@ -200,9 +200,9 @@ $(function(){
             contentType: "application/json",
             // 设置接受后端数据为json格式
             dataType: "json",
-            // headers: {
-            //  "X-CSRFToken" : getCookie("csrf_token")
-            // },
+            headers: {
+             "X-CSRFToken" : getCookie("csrf_token")
+            },
             // resp = jsonify(errno=RET.OK, errmsg="手机格式错误")
             success: function (resp) {
                 //回调函数
@@ -274,6 +274,9 @@ function sendSMSCode() {
         contentType: "application/json",
         // 接受数据也是json格式
         dataType: "json",
+        headers: {
+             "X-CSRFToken" : getCookie("csrf_token")
+        },
         success:function (resp) {
             //发送短信验证码回调函数
             if(resp.errno == 0){
