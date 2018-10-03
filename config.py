@@ -19,6 +19,7 @@ class Config(object):
     # redis配置信息
     REDIS_HOST = "127.0.0.1"
     REDIS_PORT = 6379
+    # 使用redis的数据库
     REDIS_NUM = 6
 
     # 加密字符串
