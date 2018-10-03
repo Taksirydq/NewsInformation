@@ -10,7 +10,7 @@ from info.utils.response_code import RET
 @index_blu.route('/')
 def index():
     """新闻首页"""
-    # ----------------获取到用户登录信息----------------------------------
+    # ----------------获取用户登录信息----------------------------------
     # 1. 获取当前用户登录的id
     user_id = session.get("user_id")
     user = None  # type:User
@@ -35,6 +35,8 @@ def index():
         }
         使用方式：data.user_info.id
     """
+    # ---------------------获取新闻点击排行榜---------------------------------
+
     # 组织响应数据字典
     # 如果user存在,我就使用user转换成字典给到其user_info,如果user不存在，就用None替换user.to_dict()
     data = {
