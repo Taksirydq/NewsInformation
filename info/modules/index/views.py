@@ -13,7 +13,6 @@ def index():
     # ----------------获取用户登录信息----------------------------------
     # 1. 获取当前用户登录的id
     user_id = session.get("user_id")
-    print("user_id is %s" % user_id)
     user = None  # type:User
     # 2.查询用户对象
     if user_id:
