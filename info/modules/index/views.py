@@ -10,7 +10,7 @@ from info.utils.response_code import RET
 @index_blu.route('/')
 def index():
     """新闻首页"""
-    # ----------------获取用户登录信息----------------------------------
+    # ----------------获取到用户登录信息----------------------------------
     # 1. 获取当前用户登录的id
     user_id = session.get("user_id")
     user = None  # type:User
