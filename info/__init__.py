@@ -2,12 +2,14 @@ from redis import StrictRedis
 import logging
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from flask_wtf.csrf import CSRFProtect
+from flask_wtf.csrf import CSRFProtect, generate_csrf
 from flask_session import Session
 from config import config_dict
 from logging.handlers import RotatingFileHandler
 
 # 暂时没有app对象，就不会去初始化，只是声明一下
+from info.utils.common import do_index_class
+
 db = SQLAlchemy()
 # redis数据库对象的声明（全局变量）
 redis_store = None
@@ -65,7 +67,22 @@ def create_app(config_name):
       3.自己校验这两个值
       """
     # 开启csrf保护
-    # CSRFProtect(app)
+    CSRFProtect(app)
+
+    # 使用钩子函数将csrf_token带回给浏览器
+    @app.after_request
+    def set_csrftoken(response):
+        """借助response.setcookie方法将csrf_token存储到浏览器"""
+        # 1.生成csrf_token随机值
+        csrf_token = generate_csrf()
+        # 2.设置cookie
+        response.set_cookie("csrf_token", csrf_token)
+        # 返回响应对象
+        return response
+
+    # 添加自定义的过滤器
+    app.add_template_filter(do_index_class, "do_index_class")
+
     # 设置session保存位置,将session的存储方法进行调整（flask后端内存---> redis数据库）
     Session(app)
 
