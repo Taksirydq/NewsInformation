@@ -166,6 +166,7 @@ def register():
     return jsonify(errno=RET.OK, errmsg="注册成功")
 
 
+# 127.0.0.1:5000/passport/image_code?code_id=uuid编码
 @passport_blu.route('/image_code')
 def get_image_code():
     """获取验证码图片的后端接口(GET)"""

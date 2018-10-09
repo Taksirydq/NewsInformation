@@ -1,6 +1,6 @@
 from redis import StrictRedis
 import logging
-from flask import Flask
+from flask import Flask, g, render_template
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFProtect, generate_csrf
 from flask_session import Session
@@ -8,7 +8,7 @@ from config import config_dict
 from logging.handlers import RotatingFileHandler
 
 # 暂时没有app对象，就不会去初始化，只是声明一下
-from info.utils.common import do_index_class
+from info.utils.common import do_index_class, user_decorative_device
 
 db = SQLAlchemy()
 # redis数据库对象的声明（全局变量）
@@ -80,6 +80,19 @@ def create_app(config_name):
         # 返回响应对象
         return response
 
+    # 捕获404异常，页面统一处理
+    @app.errorhandler(404)
+    @user_decorative_device
+    def error_handler(err):
+        # 1.获取用户对象
+        user = g.user
+        # 2.对象转成字典
+        data = {
+            "user_info": user.to_dict() if user else None
+        }
+        # 3.渲染模板
+        return render_template("news/404.html", data=data)
+
     # 添加自定义的过滤器
     app.add_template_filter(do_index_class, "do_index_class")
 
@@ -94,6 +107,10 @@ def create_app(config_name):
     # 注册蓝图
     from info.modules.passport import passport_blu
     app.register_blueprint(passport_blu)
+
+    # 注册蓝图
+    from info.modules.news import news_bp
+    app.register_blueprint(news_bp)
 
     # 返回不同模式下的app对象
     return app
