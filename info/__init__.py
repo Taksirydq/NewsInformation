@@ -99,18 +99,22 @@ def create_app(config_name):
     # 设置session保存位置,将session的存储方法进行调整（flask后端内存---> redis数据库）
     Session(app)
 
-    # 注册蓝图
+    # 注册首页蓝图
     # 真正用到蓝图对象的时候才导入，延迟导入（只有函数被调用才会来导入），解决循环导入问题
     from info.modules.index import index_blu
     app.register_blueprint(index_blu)
 
-    # 注册蓝图
+    # 注册登录模块蓝图
     from info.modules.passport import passport_blu
     app.register_blueprint(passport_blu)
 
-    # 注册蓝图
+    # 注册新闻模块蓝图
     from info.modules.news import news_bp
     app.register_blueprint(news_bp)
+
+    # 注册个人中心蓝图
+    from info.modules.profile import profile_bp
+    app.register_blueprint(profile_bp)
 
     # 返回不同模式下的app对象
     return app
