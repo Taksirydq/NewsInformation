@@ -194,7 +194,7 @@ class Comment(BaseModel, db.Model):
             "parent": self.parent.to_dict() if self.parent else None,
             "user": User.query.get(self.user_id).to_dict(),
             "news_id": self.news_id,
-            "like_count": self.like_count
+            "like_count": self.like_count,
         }
         return resp_dict
 
