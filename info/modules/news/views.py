@@ -306,6 +306,7 @@ def news_detail(news_id):
     # 1.查询出当前新闻的所有评论，取得所有评论的id--->list[1,2,3,4]
     comment_id_list = [comment.id for comment in comments]
     # 2.再通过评论点赞模型(CommentLike)查询当前用户点赞了哪几条评论-->[模型1][模型2]
+    # [点过赞的评论的id要在我评论id的列表范围内，评论用户的id要等于我当前用户的id]
     if user:
         try:
             commentlike_model_list = CommentLike.query.filter(CommentLike.comment_id.in_(comment_id_list),
