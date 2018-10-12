@@ -334,6 +334,68 @@ def news_release():
     return jsonify(errno=RET.OK, errmsg="新闻发布成功")
 
 
+@profile_bp.route('/news_list')
+@user_decorative_device
+def news_list():
+    """获取当前用户新闻收藏列表数据"""
+    """
+    1.获取参数
+        1.1 user: 当前用户对象，p:当前页码(默认值第一页)
+    2.校验参数
+        2.1 非空判断
+    3.逻辑处理
+        3.1 进行分页查询
+    4.返回值
+    """
+    # 获取用户对象
+    user = g.user
+    p = request.args.get("p", 1)
+
+    # 2.1 参数判断
+    try:
+        p = int(p)
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.PARAMERR, errmsg="参数内容错误")
+
+    # 当用户存在的时候采取查询
+    """
+    对比：
+    当前用户收藏的新闻查询： user.collection_news
+    当前用户发布的新闻查询： News.query.filter(News.user_id == user.id)
+    """
+    news_list = []
+    current_page = 1
+    total_page = 1
+    if user:
+        try:
+            paginate = News.query.filter(News.user_id == user.id).paginate(p, constants.OTHER_NEWS_PAGE_MAX_COUNT,
+                                                                           False)
+            # 当前页码所有数据
+            news_list = paginate.items
+            # 当前页码
+            current_page = paginate.page
+            # 总页数
+            total_page = paginate.pages
+        except Exception as e:
+            current_app.logger.error(e)
+            return jsonify(errno=RET.DBERR, errmsg="查询发布新闻分页数据异常")
+
+        # 对象列表转成字典列表
+        news_dict_list = []
+        for news in news_list if news_list else []:
+            news_dict_list.append(news.to_basic_dict())
+
+        # 组织响应数据
+        data = {
+            "news_list": news_dict_list,
+            "current_page": current_page,
+            "total_page": total_page
+        }
+        # 返回值
+        return render_template("profile/user_news_list.html", data=data)
+
+
 # 127.0.0.1:5000/user/info
 @profile_bp.route('/info')
 @user_decorative_device
