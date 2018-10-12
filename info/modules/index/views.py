@@ -108,7 +108,7 @@ def get_news_list():
         current_app.logger.error(e)
         return jsonify(errno=RET.PARAMERR, errmsg="参数内容格式错误")
     # 条件列表
-    filters = []
+    filters = [News.status == 0]
     # 如果分类id不为1，那么添加分类id的过滤
     if cid != 1:
         # ==在sqlalchemy底层有重写__eq__方法，改变了该返回值，返回是一个查询条件
