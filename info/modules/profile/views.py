@@ -1,4 +1,4 @@
-from info.models import Category, News
+from info.models import Category, News, User
 from info.utils.pic_storage import pic_storage
 from info import db, constants
 from info.utils.response_code import RET
@@ -394,6 +394,55 @@ def news_list():
         }
         # 返回值
         return render_template("profile/user_news_list.html", data=data)
+
+
+# @profile_bp.route('/followed_user', methods=['POST'])
+# @user_decorative_device
+# def followed_user():
+#     """关注与取消关注用户后端接口"""
+#     # 获取用户对象
+#     user = g.user
+#     # 判断用户是否存在
+#     if not user:
+#         return jsonify(errno=RET.SESSIONERR, errmsg="用户未登录")
+#
+#     # 获取参数 user_id:被关注的用户id action:指定两个值：'follow', 'unfollow'
+#     user_id = request.json.get("user_id")
+#     action = request.json.get("action")
+#
+#     # 参数校验
+#     if not all([user_id, action]):
+#         return jsonify(errno=RET.PARAMERR, errmsg="参数不足")
+#     # action["follow", "unfollow"]
+#     if action not in ("follow", "unfollow"):
+#         return jsonify(errno=RET.PARAMERR, errmsg="参数内容错误")
+#
+#     # 根据user_id去查询关注的用户信息
+#     try:
+#         target_user = User.query.get(user_id)
+#     except Exception as e:
+#         current_app.logger.error(e)
+#         return jsonify(errno=RET.DBERR, errmsg="查询数据异常")
+#     if not target_user:
+#         return jsonify(errno=RET.NODATA, errmsg="未查询到用户数据")
+#
+#     # 根据不同的操作做不同的逻辑
+#     if action == 'follow':
+#         if target_user.followers.filter(User.id == user.id).count() > 0:
+#             return jsonify(errno=RET.DATAERR, errmsg="当前用户已关注")
+#         target_user.followers.append(user)
+#     else:
+#         if target_user.followers.filter(User.id == user.id).count() > 0:
+#             target_user.followers.remove(user)
+#
+#     # 保存回数据库
+#     try:
+#         db.session.commit()
+#     except Exception as e:
+#         current_app.logger.error(e)
+#         return jsonify(errno=RET.DBERR, errmsg="保存数据异常")
+#     # 返回值
+#     return jsonify(errno=RET.OK, errmsg="OK")
 
 
 # 127.0.0.1:5000/user/info
