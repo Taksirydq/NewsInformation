@@ -83,7 +83,7 @@ class User(BaseModel, db.Model):
         # 返回值:加密后的密码并赋值给user对象的password_hash属性
         self.password_hash = generate_password_hash(password)
 
-    def check_passowrd(self, password):
+    def check_password(self, password):
         # 参数一: 加密密码
         # 参数二: 未加密的密码
         # 参数三: 将未加密的密码按照相同的加密方式再次加密，然后在比较，如果一致返回True, 否则返回False
