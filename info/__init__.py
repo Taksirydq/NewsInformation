@@ -116,5 +116,8 @@ def create_app(config_name):
     from info.modules.profile import profile_bp
     app.register_blueprint(profile_bp)
 
+    # 注册用户管理模块蓝图
+    from info.modules.admin import admin_bp
+    app.register_blueprint(admin_bp)
     # 返回不同模式下的app对象
     return app
