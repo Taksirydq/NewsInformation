@@ -51,7 +51,7 @@ def login():
 
     # 3.3 存在: 判断密码是否填写正确
     # 参数一: 未加密的密码
-    if not user.check_passowrd(password):
+    if not user.check_password(password):
         # 密码错误
         return jsonify(errno=RET.DATAERR, errmsg="密码填写错误")
 
@@ -78,9 +78,10 @@ def login():
 def login_out():
     """退出登录后端接口"""
     # 将用户登录信息清除
-    session.pop("user_id")
-    session.pop("mobile")
-    session.pop("nick_name")
+    session.pop("user_id", None)
+    session.pop("mobile", None)
+    session.pop("nick_name", None)
+    session.pop("is_admin", None)
     return jsonify(errno=RET.OK, errmsg="退出登录成功")
 
 
