@@ -1,9 +1,82 @@
 from info import constants, db
-from info.models import News, Comment, CommentLike
+from info.models import News, Comment, CommentLike, User
 from info.utils.common import user_decorative_device
 from info.utils.response_code import RET
 from . import news_bp
 from flask import render_template, current_app, jsonify, g, request
+
+
+@news_bp.route('/followed_user', methods=['POST'])
+@user_decorative_device
+def followed_user():
+    """关注、取消关注"""
+    """
+    1.获取参数
+        1.1 author_id:作者id，action:关注、取消关注的行为
+    2.校验参数
+        2.1 非空判断
+        2.2 action in ['follow', 'unfollow']
+    3.逻辑处理
+        3.0 author_id查询被关注的这个作者对象
+        3.1 关注：将作者对象添加偶像列表
+        3.2 取消关注：将作者从用户的偶像列表移除
+    4.返回值
+    """
+
+    # 1.1 author_id:作者id，action:关注、取消关注的行为
+    # 1.1 用户对象 新闻id comment_id评论的id，action:(点赞、取消点赞)
+    params_dict = request.json
+    author_id = request.json.get('user_id')
+    action = params_dict.get("action")
+    user = g.user
+
+    # 2.1 非空判断
+    if not all([author_id, action]):
+        return jsonify(errno=RET.PARAMERR, errmsg="参数不足")
+
+    # 2.2 用户是否登录判断
+    if not user:
+        return jsonify(errno=RET.SESSIONERR, errmsg="用户未登录")
+
+    # 2.3 action in ['follow', 'unfollow']
+    if action not in ['follow', 'unfollow']:
+        return jsonify(errno=RET.PARAMERR, errmsg="action参数错误")
+
+    # 3.0 author_id查询被关注的这个作者对象
+    try:
+        author = User.query.get(author_id)
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg="查询作者异常")
+    if not author:
+        return jsonify(errno=RET.NODATA, errmsg="作者不存在")
+
+    """
+    if user in author.followers:
+    # 用户关注过该作者
+    """
+    # 3.1 关注：将作者对象添加偶像列表
+    if action == "follow":
+        if author in user.followed:
+            return jsonify(errno=RET.DATAEXIST, errmsg="不能重复关注")
+        else:
+            # 将作者添加到当前用户的偶像列表，关注
+            user.followed.append(author)
+    # 3.2 取消关注：将作者从用户的偶像列表移除
+    else:
+        if author in user.followed:
+            # 将作者从用户偶像列表移除，取关
+            user.followed.remove(author)
+
+    # 保存回数据库
+    try:
+        db.session.commit()
+    except Exception as e:
+        current_app.logger.error(e)
+        db.session.rollback()
+        return jsonify(errno=RET.DBERR, errmsg="")
+
+    return jsonify(errno=RET.OK, errmsg="OK")
 
 
 # 127.0.0.1:5000/news/news_collect
@@ -280,11 +353,35 @@ def news_detail(news_id):
     # ---------------------查询当前用户是否收藏当前新闻-------------
     # is_collected = True 表示当前用户收藏过该新闻(false反之)
     is_collected = False
+    # 标示当前登录用户是否对该新闻的作者有关注
+    is_followed = False
+
     # 当前用户已经登录
     if user:
         if news in user.collection_news:
             # 当前新闻在用户的新闻收藏列表内，表示已经收藏
             is_collected = True
+    # 判断当前登录用户是否对该新闻的作者有关注
+
+    try:
+        author = User.query.filter(User.id == news.user_id).first()
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg="查询作者对象异常")
+    # 当前用户处于登录状态，当前新闻有作者
+    if user and author:
+        """
+        当前用户：user
+        作者：author
+
+        用户在作者的粉丝列表中,表示当前用户关注过作者
+        user in author.followers
+
+        当前作者在用户的偶像列表中，表示当前用户关注过作者
+        author in user.followed
+        """
+        if author in user.followed:
+            is_followed = True
 
     # ---------------------查询新闻评论列表数据----------------------------
     try:
@@ -337,6 +434,7 @@ def news_detail(news_id):
         "news_rank_list": news_dict_list,
         "news": news_dict,
         "is_collected": is_collected,
+        "is_followed": is_followed,
         "comments": comment_dict_list
     }
 
