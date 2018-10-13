@@ -396,53 +396,45 @@ def news_list():
         return render_template("profile/user_news_list.html", data=data)
 
 
-# @profile_bp.route('/followed_user', methods=['POST'])
-# @user_decorative_device
-# def followed_user():
-#     """关注与取消关注用户后端接口"""
-#     # 获取用户对象
-#     user = g.user
-#     # 判断用户是否存在
-#     if not user:
-#         return jsonify(errno=RET.SESSIONERR, errmsg="用户未登录")
-#
-#     # 获取参数 user_id:被关注的用户id action:指定两个值：'follow', 'unfollow'
-#     user_id = request.json.get("user_id")
-#     action = request.json.get("action")
-#
-#     # 参数校验
-#     if not all([user_id, action]):
-#         return jsonify(errno=RET.PARAMERR, errmsg="参数不足")
-#     # action["follow", "unfollow"]
-#     if action not in ("follow", "unfollow"):
-#         return jsonify(errno=RET.PARAMERR, errmsg="参数内容错误")
-#
-#     # 根据user_id去查询关注的用户信息
-#     try:
-#         target_user = User.query.get(user_id)
-#     except Exception as e:
-#         current_app.logger.error(e)
-#         return jsonify(errno=RET.DBERR, errmsg="查询数据异常")
-#     if not target_user:
-#         return jsonify(errno=RET.NODATA, errmsg="未查询到用户数据")
-#
-#     # 根据不同的操作做不同的逻辑
-#     if action == 'follow':
-#         if target_user.followers.filter(User.id == user.id).count() > 0:
-#             return jsonify(errno=RET.DATAERR, errmsg="当前用户已关注")
-#         target_user.followers.append(user)
-#     else:
-#         if target_user.followers.filter(User.id == user.id).count() > 0:
-#             target_user.followers.remove(user)
-#
-#     # 保存回数据库
-#     try:
-#         db.session.commit()
-#     except Exception as e:
-#         current_app.logger.error(e)
-#         return jsonify(errno=RET.DBERR, errmsg="保存数据异常")
-#     # 返回值
-#     return jsonify(errno=RET.OK, errmsg="OK")
+@profile_bp.route('/user_follow')
+@user_decorative_device
+def user_follow():
+    """用户关注列表后端"""
+    # 获取页数
+    p = request.args.get("p", 1)
+    try:
+        p = int(p)
+    except Exception as e:
+        current_app.logger.error(e)
+        p = 1
+
+    # 获取用户对象
+    user = g.user
+    follows = []
+    current_page = 1
+    total_page = 1
+    try:
+        # user.followed当前登录用户的关注列表
+        paginate = user.followed.paginate(p, constants.USER_FOLLOWED_MAX_COUNT, False)
+        # 获取当前页所有数据
+        follows = paginate.items
+        # 获取当前页
+        current_page = paginate.page
+        # 获取总页数
+        total_page = paginate.pages
+    except Exception as e:
+        current_app.logger.error(e)
+
+    user_dict_list = []
+    for follow_user in follows:
+        user_dict_list.append(follow_user.to_dict())
+    # 组织响应数据
+    data = {
+        "users": user_dict_list,
+        "current_page": current_page,
+        "total_page": total_page
+    }
+    return render_template("profile/user_follow.html", data=data)
 
 
 # 127.0.0.1:5000/user/info
