@@ -1,4 +1,5 @@
 import qiniu
+
 access_key = 'W0oGRaBkAhrcppAbz6Nc8-q5EcXfL5vLRashY4SI'
 secret_key = 'tsYCBckepW4CqW0uHb9RdfDMXRDOTEpYecJAMItL'
 bucket_name = 'python-ihome'
@@ -28,9 +29,9 @@ def pic_storage(data):
         # 自定义工具方法的异常一定要抛出给调用者，不能私自解决
         raise e
 
-    print(ret)
-    print("--------")
-    print(info)
+    # print(ret)
+    # print("--------")
+    # print(info)
 
     if info.status_code != 200:
         # 上传图片到七牛云失败
